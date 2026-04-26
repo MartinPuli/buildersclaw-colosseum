@@ -7,14 +7,82 @@ declare_id!("BksBCTjhUJgZQsfqaBAFXHkLrpG537J9UCBzBguSWZHE");
 pub mod escrow {
     use super::*;
 
-    pub fn deposit(_ctx: Context<Deposit>, _hackathon_id: u64, _amount: u64) -> Result<()> {
-        Err(error!(EscrowError::NotImplemented))
+    pub fn deposit(ctx: Context<Deposit>, hackathon_id: u64, amount: u64) -> Result<()> {
+        require!(amount > 0, EscrowError::ZeroAmount);
+
+        let vault = &mut ctx.accounts.vault;
+        vault.hackathon_id = hackathon_id;
+        vault.mint = ctx.accounts.mint.key();
+        vault.amount = amount;
+        vault.depositor = ctx.accounts.depositor.key();
+        vault.authority = ctx.accounts.verdict_authority.key();
+        vault.status = 0; // Locked
+        vault.bump = ctx.bumps.vault;
+
+        let cpi = CpiContext::new(
+            ctx.accounts.token_program.key(),
+            Transfer {
+                from: ctx.accounts.depositor_ata.to_account_info(),
+                to: ctx.accounts.vault_ata.to_account_info(),
+                authority: ctx.accounts.depositor.to_account_info(),
+            },
+        );
+        token::transfer(cpi, amount)?;
+        Ok(())
     }
-    pub fn release_to(_ctx: Context<ReleaseTo>) -> Result<()> {
-        Err(error!(EscrowError::NotImplemented))
+
+    pub fn release_to(ctx: Context<ReleaseTo>) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+        require!(
+            ctx.accounts.authority.key() == vault.authority,
+            EscrowError::BadAuthority
+        );
+        require!(
+            ctx.accounts.vault_ata.mint == vault.mint,
+            EscrowError::MintMismatch
+        );
+
+        let id_bytes = vault.hackathon_id.to_le_bytes();
+        let seeds: &[&[u8]] = &[b"vault", id_bytes.as_ref(), &[vault.bump]];
+        let signer = &[seeds];
+
+        let cpi = CpiContext::new_with_signer(
+            ctx.accounts.token_program.key(),
+            Transfer {
+                from: ctx.accounts.vault_ata.to_account_info(),
+                to: ctx.accounts.winner_ata.to_account_info(),
+                authority: vault.to_account_info(),
+            },
+            signer,
+        );
+        token::transfer(cpi, vault.amount)?;
+        vault.status = 1; // Released
+        Ok(())
     }
-    pub fn refund_to(_ctx: Context<RefundTo>) -> Result<()> {
-        Err(error!(EscrowError::NotImplemented))
+
+    pub fn refund_to(ctx: Context<RefundTo>) -> Result<()> {
+        let vault = &mut ctx.accounts.vault;
+        require!(
+            ctx.accounts.authority.key() == vault.authority,
+            EscrowError::BadAuthority
+        );
+
+        let id_bytes = vault.hackathon_id.to_le_bytes();
+        let seeds: &[&[u8]] = &[b"vault", id_bytes.as_ref(), &[vault.bump]];
+        let signer = &[seeds];
+
+        let cpi = CpiContext::new_with_signer(
+            ctx.accounts.token_program.key(),
+            Transfer {
+                from: ctx.accounts.vault_ata.to_account_info(),
+                to: ctx.accounts.depositor_ata.to_account_info(),
+                authority: vault.to_account_info(),
+            },
+            signer,
+        );
+        token::transfer(cpi, vault.amount)?;
+        vault.status = 2; // Refunded
+        Ok(())
     }
 }
 
