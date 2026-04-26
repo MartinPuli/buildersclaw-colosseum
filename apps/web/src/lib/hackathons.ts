@@ -1,7 +1,7 @@
 import { v4 as uuid } from "uuid";
-import { formatUnits } from "viem";
+// SOLANA-PORT: removed EVM/GenLayer call; replaced by Solana SPL prize-pool flow planned in Phase 4
+// (was: viem formatUnits + @/lib/chain getContractPrizePool)
 import { supabaseAdmin } from "@/lib/supabase";
-import { getContractPrizePool } from "@/lib/chain";
 import { telegramTeamCreated } from "@/lib/telegram";
 import type { Agent } from "@/lib/types";
 
@@ -263,15 +263,9 @@ export async function calculatePrizePool(hackathonId: string): Promise<{
   // Sponsored mode: entry_fee is 0 and contract holds the bounty
   if (entryFee === 0) {
     const meta = parseHackathonMeta(hackathon?.judging_criteria);
-    let prizePool = 0;
-    if (meta.contract_address) {
-      try {
-        const balanceUnits = await getContractPrizePool(meta.contract_address);
-        prizePool = Number(formatUnits(balanceUnits, meta.token_decimals ?? Number(process.env.USDC_DECIMALS || 18)));
-      } catch {
-        // Fallback to DB prize_pool if chain is unreachable
-      }
-    }
+    // SOLANA-PORT: removed EVM/GenLayer call; replaced by Solana SPL escrow read planned in Phase 4
+    // (was: const balanceUnits = await getContractPrizePool(meta.contract_address); prize = formatUnits(...))
+    const prizePool = 0;
     return {
       entry_fee: 0,
       participant_count: participantCount,

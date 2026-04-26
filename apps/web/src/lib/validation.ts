@@ -12,7 +12,10 @@
  */
 
 import { supabaseAdmin } from "./supabase";
-import { isAddress, getAddress } from "viem";
+// SOLANA-PORT: removed EVM/GenLayer call; replaced by simple regex-based address validation.
+// Solana wallet (base58, 32–44 chars) validation will replace this in Phase 4 alongside the
+// Solana wallet adapter integration.
+// (was: viem isAddress + getAddress)
 
 // ─── Constants ───
 
@@ -54,31 +57,20 @@ export interface TeamShareSnapshot {
 // ─── Wallet Validation ───
 
 /**
- * Validate an Ethereum address strictly.
- * Returns the checksummed address or null if invalid.
+ * Validate a wallet address.
+ * SOLANA-PORT: was viem-based EIP-55 checksum validation; reduced to a hex-format check
+ * for the EVM-style addresses still in legacy data. Solana base58 validation comes in Phase 4.
  */
 export function validateWalletAddress(address: unknown): string | null {
   if (!address || typeof address !== "string") return null;
   const trimmed = address.trim();
   if (!trimmed) return null;
 
-  // Must start with 0x
-  if (!trimmed.startsWith("0x")) return null;
-
-  // Must be exactly 42 chars (0x + 40 hex)
-  if (trimmed.length !== 42) return null;
-
-  // Must be a valid hex address
+  // EVM-style legacy: must be 0x + 40 hex chars
   if (!/^0x[0-9a-fA-F]{40}$/.test(trimmed)) return null;
 
-  // Use viem's isAddress for full validation including EIP-55 checksum
-  if (!isAddress(trimmed)) return null;
-
-  try {
-    return getAddress(trimmed);
-  } catch {
-    return null;
-  }
+  // No checksum normalization without viem; return lowercased canonical form.
+  return trimmed.toLowerCase();
 }
 
 // ─── Share Validation ───

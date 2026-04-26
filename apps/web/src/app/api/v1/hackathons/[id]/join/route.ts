@@ -3,10 +3,12 @@ import { NextRequest } from "next/server";
 import { authenticateRequest } from "@/lib/auth";
 import { supabaseAdmin } from "@/lib/supabase";
 import { created, error, notFound, unauthorized } from "@/lib/responses";
-import { createSingleAgentTeam, sanitizeString, toPublicHackathonStatus, calculatePrizePool, parseHackathonMeta } from "@/lib/hackathons";
+import { createSingleAgentTeam, sanitizeString, calculatePrizePool, parseHackathonMeta } from "@/lib/hackathons";
 import { getBalance } from "@/lib/balance";
-import { verifyJoinTransaction } from "@/lib/chain";
-import { getJoinTransactionGuide, getChainSetupGuide, checkAgentChainReadiness } from "@/lib/chain-prerequisites";
+// SOLANA-PORT: removed EVM/GenLayer call; on-chain join verification + chain-prereqs
+// guides (Foundry/cast, USDC approve+join) are gone. Solana SPL join flow is planned in
+// Phase 4. For now, contract-backed hackathons return 501 from the on-chain branch below.
+// (was: @/lib/chain verifyJoinTransaction; chain-prereqs guides + agent readiness helper)
 import { validateWalletAddress, isValidTxHash, isValidUUID, checkRateLimit } from "@/lib/validation";
 import { parseTelegramUsername, verifyTelegramMembership } from "@/lib/telegram";
 
@@ -157,75 +159,17 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
   }
 
   if (meta.contract_address) {
-      // ── On-chain hackathon: verify join() transaction ──
-      if (!wallet || !txHash) {
-      // Read contract state for the guide
-      let entryFeeUnits = "0";
-      let tokenAddress = process.env.USDC_ADDRESS || "USDC_TOKEN_ADDRESS";
-      let tokenSymbol = process.env.USDC_SYMBOL || "USDC";
-      try {
-        const { getPublicChainClient, normalizeAddress, getEscrowTokenConfig } = await import("@/lib/chain");
-        const { parseAbi } = await import("viem");
-        const pc = getPublicChainClient();
-        const [fee, tokenConfig] = await Promise.all([
-          pc.readContract({
-          address: normalizeAddress(meta.contract_address) as `0x${string}`,
-          abi: parseAbi(["function entryFee() view returns (uint256)"]),
-          functionName: "entryFee",
-          }),
-          getEscrowTokenConfig(meta.contract_address),
-        ]);
-        entryFeeUnits = (fee as bigint).toString();
-        tokenAddress = tokenConfig.tokenAddress;
-        tokenSymbol = tokenConfig.symbol;
-      } catch { /* best-effort */ }
-
-      const txGuide = getJoinTransactionGuide({
-        contractAddress: meta.contract_address,
-        entryFeeUnits,
-        tokenAddress,
-        tokenSymbol,
-        chainId: meta.chain_id,
-        rpcUrl: process.env.RPC_URL || null,
-        hackathonId,
-      });
-
-      const agentReadiness = checkAgentChainReadiness(agent);
-
-      return error(
-        "This is a contract-backed hackathon. You must call join() on-chain first, then submit wallet_address + tx_hash here.",
-        400,
-        {
-          what_you_need: `Foundry's \`cast\` CLI, a funded wallet, and enough ${tokenSymbol} approved for the escrow on the correct chain.`,
-          setup_guide: "GET /api/v1/chain/setup for full Foundry installation + key management instructions.",
-          transaction: txGuide,
-          agent_wallet_status: agentReadiness,
-          chain: {
-            chain_id: meta.chain_id ?? (process.env.CHAIN_ID ? Number(process.env.CHAIN_ID) : null),
-            rpc_url: process.env.RPC_URL || null,
-            entry_fee_units: entryFeeUnits,
-            token_address: tokenAddress,
-            token_symbol: tokenSymbol,
-          },
-          contract_details: `GET /api/v1/hackathons/${hackathonId}/contract`,
-        },
-      );
-    }
-
-    try {
-      await verifyJoinTransaction({
-        contractAddress: meta.contract_address,
-        walletAddress: wallet,
-        txHash: txHash,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Join transaction verification failed";
-      return error(message, 400, {
-        help: "Make sure you approved the escrow to spend your USDC and called join() on the correct contract.",
-        contract_details: `GET /api/v1/hackathons/${hackathonId}/contract`,
-        setup_guide: "GET /api/v1/chain/setup",
-      });
-    }
+    // SOLANA-PORT: removed EVM/GenLayer call; the original on-chain branch verified the
+    // EVM `join()` transaction via @/lib/chain.verifyJoinTransaction and surfaced an
+    // EVM-specific Foundry/cast guide. Both are gone in Phase 0b.
+    // The Solana equivalent (SPL transfer + program join CPI verification) will land in
+    // Phase 4. For now, hackathons that still carry an EVM contract_address are blocked.
+    return error(
+      "Contract-backed hackathon joins are temporarily disabled during the Solana port. " +
+        "See Phase 4 for the Solana equivalent.",
+      501,
+      { contract_address: meta.contract_address, chain_id: meta.chain_id ?? null },
+    );
   } else if (entryFee > 0) {
     // ── Off-chain paid hackathon: charge from USD balance ──
     const balance = await getBalance(agent.id);

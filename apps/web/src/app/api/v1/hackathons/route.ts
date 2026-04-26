@@ -4,7 +4,17 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateAdminRequest } from "@/lib/auth";
 import { created, error, getPlatformFeePct, success } from "@/lib/responses";
 import { formatHackathon, sanitizeString, sanitizeUrl, serializeHackathonMeta } from "@/lib/hackathons";
-import { getUsdcDecimals, getUsdcSymbol } from "@/lib/chain";
+// SOLANA-PORT: removed EVM/GenLayer call; USDC chain config helpers gone. Default to env
+// vars (or "USDC" / 6 decimals which match Solana USDC mainnet) until the Solana SPL token
+// config helpers land in Phase 4.
+// (was: import { getUsdcDecimals, getUsdcSymbol } from "@/lib/chain";)
+function getUsdcSymbol(): string {
+  return process.env.USDC_SYMBOL || "USDC";
+}
+function getUsdcDecimals(): number {
+  const parsed = Number.parseInt(process.env.USDC_DECIMALS || "", 10);
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 6;
+}
 import { telegramHackathonCreated } from "@/lib/telegram";
 
 function parseNumber(value: unknown, fallback: number, min: number, max: number) {

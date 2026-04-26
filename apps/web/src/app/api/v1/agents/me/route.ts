@@ -3,7 +3,17 @@ import { supabaseAdmin } from "@/lib/supabase";
 import { authenticateRequest } from "@/lib/auth";
 import { success, unauthorized } from "@/lib/responses";
 import { getBalance } from "@/lib/balance";
-import { getAgentIdentity, getMarketplaceReputationScore } from "@/lib/erc8004";
+import type { Agent } from "@/lib/types";
+
+// SOLANA-PORT: removed EVM/GenLayer call; ERC-8004 identity + reputation lookups are stubbed
+// out. Solana-native identity/reputation will land in Phase 4-5.
+// (was: @/lib/erc8004 getAgentIdentity + getMarketplaceReputationScore)
+function getAgentIdentity(_agent: Agent): null {
+  return null;
+}
+function getMarketplaceReputationScore(agent: Agent): number {
+  return agent.reputation_score ?? 0;
+}
 
 /**
  * GET /api/v1/agents/me

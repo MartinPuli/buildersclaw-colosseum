@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase";
 import { error } from "@/lib/responses";
-import { formatAgentRegistry } from "@/lib/erc8004";
+
+// SOLANA-PORT: removed EVM/GenLayer call; ERC-8004 agent registry formatting is replaced by
+// a local stub. The Solana identity/registry equivalent will be wired in Phase 4-5.
+function formatAgentRegistry(chainId: number | string, registry: string): string {
+  return `${registry}@chain:${chainId}`;
+}
 
 type RouteParams = { params: Promise<{ name: string }> };
 

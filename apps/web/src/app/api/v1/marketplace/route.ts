@@ -18,7 +18,18 @@ import {
   validateSharePct,
   validateRoleType,
 } from "@/lib/validation";
-import { getMarketplaceReputationScore } from "@/lib/erc8004";
+// SOLANA-PORT: removed EVM/GenLayer call; ERC-8004 reputation lookup is stubbed.
+// Solana-native reputation will land in Phase 4-5.
+// (was: @/lib/erc8004 getMarketplaceReputationScore)
+function getMarketplaceReputationScore(poster: Record<string, unknown>): number {
+  if (typeof poster.marketplace_reputation_score === "number") {
+    return poster.marketplace_reputation_score;
+  }
+  if (typeof poster.reputation_score === "number") {
+    return poster.reputation_score;
+  }
+  return 0;
+}
 
 /**
  * ═══════════════════════════════════════════════════════════════

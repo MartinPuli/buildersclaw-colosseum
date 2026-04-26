@@ -2,18 +2,10 @@ import { supabaseAdmin } from "./supabase";
 import { generateCode } from "./llm";
 import { fetchRepoForJudging, formatRepoForPrompt, parseGitHubUrl } from "./repo-fetcher";
 import { Hackathon, Submission } from "./types";
-import {
-  isGenLayerAvailable,
-  startGenLayerDeployment,
-  pollGenLayerDeployment,
-  startGenLayerSubmit,
-  pollGenLayerWrite,
-  startGenLayerFinalize,
-  getGenLayerJudgeResult,
-  type GenLayerContender,
-} from "./genlayer";
+// SOLANA-PORT: removed EVM/GenLayer call; GenLayer judging will be replaced by a Solana
+// equivalent (or simplified Gemini-only flow) planned in Phase 5.
+// (was: imports from "./genlayer" and "genlayer-js/types")
 import { isViableSubmission } from "./validation";
-import { TransactionStatus } from "genlayer-js/types";
 
 export interface EvaluationResult {
   functionality_score: number;
@@ -37,6 +29,15 @@ interface JudgingRunResult {
   queuedGenLayer: boolean;
   submissionsJudged: number;
 }
+
+// SOLANA-PORT: GenLayer contender type kept as a local placeholder so call sites still type-check.
+// The GenLayer escalation flow is removed — only Gemini judging runs in Phase 0b.
+type GenLayerContender = {
+  team_id: string;
+  team_name: string;
+  repo_summary: string;
+  gemini_score: number;
+};
 
 function parseJudgingMeta(raw: unknown): JudgingMeta {
   if (!raw) return {};
@@ -145,149 +146,10 @@ async function finalizeGeminiFallback(hackathonId: string, meta: JudgingMeta, re
   );
 }
 
-async function persistGenLayerVerdict(hackathonId: string, meta: JudgingMeta) {
-  const contractAddress = typeof meta.genlayer_contract === "string" ? meta.genlayer_contract : null;
-  if (!contractAddress) return false;
-
-  const result = await getGenLayerJudgeResult(contractAddress, hackathonId);
-  if (!result.finalized || !result.winner_team_id) {
-    return false;
-  }
-
-  const enrichResult = {
-    ...result,
-    deploy_tx_hash: meta.genlayer_deploy_tx_hash,
-    submit_tx_hash: meta.genlayer_submit_tx_hash,
-    finalize_tx_hash: meta.genlayer_finalize_tx_hash,
-  };
-
-  meta.genlayer_status = "completed";
-  meta.genlayer_result = enrichResult;
-  meta.genlayer_reasoning = result.reasoning || null;
-
-  if (result.final_score) {
-    const { data: winnerSub } = await supabaseAdmin
-      .from("submissions")
-      .select("id")
-      .eq("hackathon_id", hackathonId)
-      .eq("team_id", result.winner_team_id)
-      .single();
-
-    if (winnerSub?.id) {
-      const { data: existingEval } = await supabaseAdmin
-        .from("evaluations")
-        .select("raw_response")
-        .eq("submission_id", winnerSub.id)
-        .single();
-
-      const glFeedback = `🔗 GenLayer On-Chain Verdict (5 validators):\nFinal Score: ${result.final_score}/100\n${result.reasoning || ""}`;
-
-      let rawResponse: Record<string, unknown> = {};
-      try {
-        rawResponse = typeof existingEval?.raw_response === "string"
-          ? JSON.parse(existingEval.raw_response)
-          : {};
-      } catch {
-        rawResponse = {};
-      }
-
-      await supabaseAdmin
-        .from("evaluations")
-        .update({
-          total_score: result.final_score,
-          judge_feedback: glFeedback,
-          raw_response: JSON.stringify({ ...rawResponse, genlayer_result: enrichResult }),
-        })
-        .eq("submission_id", winnerSub.id);
-    }
-  }
-
-  await finalizeJudging(
-    hackathonId,
-    meta,
-    result.winner_team_id,
-    "gemini+genlayer",
-    `Gemini pre-scored submissions. Top contenders went to GenLayer on-chain consensus. Winner verified by 5 independent validators.`,
-  );
-
-  return true;
-}
-
-export async function continueGenLayerJudging(hackathonId: string) {
-  const { data: hackathon } = await supabaseAdmin
-    .from("hackathons")
-    .select("id, title, brief, status, judging_criteria")
-    .eq("id", hackathonId)
-    .single();
-
-  if (!hackathon || hackathon.status !== "judging") return false;
-
-  const meta = parseJudgingMeta(hackathon.judging_criteria);
-  const status = typeof meta.genlayer_status === "string" ? meta.genlayer_status : null;
-  const contenders = Array.isArray(meta.genlayer_contenders)
-    ? meta.genlayer_contenders as GenLayerContender[]
-    : [];
-
-  if (!status) return false;
-
-  try {
-    if (status === "queued") {
-      const deployment = await startGenLayerDeployment(hackathon.id, hackathon.title, hackathon.brief);
-      meta.genlayer_status = "deploying";
-      meta.genlayer_deploy_tx_hash = deployment.txHash;
-      await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
-    }
-
-    if (status === "deploying") {
-      const txHash = typeof meta.genlayer_deploy_tx_hash === "string" ? meta.genlayer_deploy_tx_hash : null;
-      if (!txHash) throw new Error("Missing GenLayer deploy tx hash");
-      const progress = await pollGenLayerDeployment(txHash);
-      if (!progress.done || !progress.contractAddress) return false;
-
-      meta.genlayer_contract = progress.contractAddress;
-      const submit = await startGenLayerSubmit(progress.contractAddress, contenders);
-      meta.genlayer_submit_tx_hash = submit.txHash;
-      meta.genlayer_status = "submitting";
-      await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
-    }
-
-    if (status === "submitting") {
-      const txHash = typeof meta.genlayer_submit_tx_hash === "string" ? meta.genlayer_submit_tx_hash : null;
-      const contractAddress = typeof meta.genlayer_contract === "string" ? meta.genlayer_contract : null;
-      if (!txHash || !contractAddress) throw new Error("Missing GenLayer submit state");
-      const progress = await pollGenLayerWrite(txHash, TransactionStatus.ACCEPTED);
-      if (!progress.done) return false;
-
-      const finalize = await startGenLayerFinalize(contractAddress);
-      meta.genlayer_finalize_tx_hash = finalize.txHash;
-      meta.genlayer_status = "finalizing";
-      await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
-    }
-
-    if (status === "finalizing") {
-      const txHash = typeof meta.genlayer_finalize_tx_hash === "string" ? meta.genlayer_finalize_tx_hash : null;
-      if (!txHash) throw new Error("Missing GenLayer finalize tx hash");
-      const progress = await pollGenLayerWrite(txHash, TransactionStatus.FINALIZED);
-      if (!progress.done) return false;
-
-      meta.genlayer_status = "reading_result";
-      await updateHackathonJudgingMeta(hackathon.id, meta);
-      return true;
-    }
-
-    if (status === "reading_result") {
-      return await persistGenLayerVerdict(hackathon.id, meta);
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`continueGenLayerJudging(${hackathon.id}) failed:`, msg);
-    await finalizeGeminiFallback(hackathon.id, meta, msg);
-    return true;
-  }
-
+// SOLANA-PORT: removed EVM/GenLayer call; persistGenLayerVerdict + continueGenLayerJudging
+// were the on-chain consensus driver. Replaced by Gemini-only judging in Phase 0b; a
+// Solana-native verifier may be added in Phase 5.
+export async function continueGenLayerJudging(_hackathonId: string): Promise<boolean> {
   return false;
 }
 
@@ -654,36 +516,16 @@ export async function judgeHackathon(hackathonId: string) {
         .upsert(evaluationsToUpsert, { onConflict: "submission_id" });
     }
 
-    // Determine winner: top Gemini contenders can be escalated to GenLayer.
+    // SOLANA-PORT: removed EVM/GenLayer call; only Gemini's top-scorer wins for now.
+    // The GenLayer on-chain consensus escalation is planned for a Solana equivalent in Phase 5.
     evaluationsToUpsert.sort((a, b) => b.total_score - a.total_score);
-    const { topEvals, contenders } = buildTopContenders(
-      evaluationsToUpsert,
-      submissions as Array<Submission & { teams?: { name?: string } | { name?: string }[] }>,
-    );
+    const topEvals = evaluationsToUpsert.filter((e) => e.total_score > 0).slice(0, 3);
 
     let winnerTeamId: string | null = null;
     let winnerAgentId: string | null = null;
     const genlayerUsed = false;
 
-    // Only use GenLayer if there are 2+ viable contenders and GenLayer is reachable
-    if (topEvals.length >= 2 && (await isGenLayerAvailable())) {
-      if (contenders.length >= 2) {
-        console.log(`GenLayer: queued ${contenders.length} top contenders for cron-driven on-chain judging`);
-        updatedMeta.genlayer_status = "queued";
-        updatedMeta.genlayer_contenders = contenders;
-        updatedMeta.genlayer_fallback_team_id = contenders[0].team_id;
-        updatedMeta.judge_method = "gemini_pending_genlayer";
-        updatedMeta.notes = `Gemini pre-scored ${submissions.length} submissions. Top ${contenders.length} contenders are queued for GenLayer on-chain consensus.`;
-        await updateHackathonJudgingMeta(hackathonId, updatedMeta, "judging");
-        return {
-          completed: false,
-          queuedGenLayer: true,
-          submissionsJudged: submissions.length,
-        } satisfies JudgingRunResult;
-      }
-    }
-
-    // Fallback: if GenLayer didn't run or failed, use Gemini's top scorer
+    // Pick Gemini's top scorer
     if (!winnerTeamId) {
       const winningEval = evaluationsToUpsert[0];
       const winningSub = submissions.find((s) => s.id === winningEval.submission_id);

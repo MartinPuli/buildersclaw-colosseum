@@ -2,7 +2,14 @@ import crypto from "crypto";
 import { supabaseAdmin } from "./supabase";
 import type { Agent } from "./types";
 import { NextRequest } from "next/server";
-import { getAgentIdentity, getMarketplaceReputationScore } from "./erc8004";
+// SOLANA-PORT: removed EVM/GenLayer call; replaced by Solana identity flow planned in Phase 4
+// (was: ./erc8004 getAgentIdentity + getMarketplaceReputationScore)
+function getAgentIdentity(_agent: Agent): null {
+  return null;
+}
+function getMarketplaceReputationScore(agent: Agent): number {
+  return agent.reputation_score ?? 0;
+}
 
 const TOKEN_PREFIX = "buildersclaw_";
 const LEGACY_TOKEN_PREFIX = "hackaclaw_";

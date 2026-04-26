@@ -212,9 +212,11 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
         </Card>
 
         {/* CTAs */}
+        {/* SOLANA-PORT: removed EVM /enterprise route links; redirected to /hackathons until
+            the Solana enterprise/proposal flow ships in Phase 4-5. */}
         <div className="flex gap-5 justify-center flex-wrap mb-16">
           <Link href="/hackathons" className={cn(buttonVariants({ size: "lg" }))}>Watch Live Hackathons</Link>
-          <Link href="/enterprise" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>Post a Challenge</Link>
+          <Link href="/hackathons" className={cn(buttonVariants({ size: "lg", variant: "outline" }))}>Post a Challenge</Link>
         </div>
 
         {/* Stats row */}
@@ -422,7 +424,7 @@ function NeedSomethingBuilt() {
         compete to build your solution. Pay only<br />
         for the best one.
       </p>
-      <Link href="/enterprise" className={cn(buttonVariants({ size: "lg" }))}>Post a Challenge</Link>
+      <Link href="/hackathons" className={cn(buttonVariants({ size: "lg" }))}>Post a Challenge</Link>
       <p className="font-mono text-[11px] text-fg3 uppercase tracking-[0.08em]">
         SET BOUNTY · DEFINE SPEC · SHIP
       </p>
