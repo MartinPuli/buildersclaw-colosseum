@@ -1,0 +1,431 @@
+{
+  "address": "FPp9mSTjVPXgyVMowMj6zETk9PQdNPMTkFMscetjAdKm",
+  "metadata": {
+    "name": "verdict",
+    "version": "0.1.0",
+    "spec": "0.1.0"
+  },
+  "instructions": [
+    {
+      "name": "init_hackathon",
+      "discriminator": [
+        123,
+        191,
+        184,
+        85,
+        41,
+        41,
+        126,
+        68
+      ],
+      "accounts": [
+        {
+          "name": "sponsor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "hackathon",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  104,
+                  97,
+                  99,
+                  107,
+                  97,
+                  116,
+                  104,
+                  111,
+                  110
+                ]
+              },
+              {
+                "kind": "arg",
+                "path": "id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "prize_vault"
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "id",
+          "type": "u64"
+        },
+        {
+          "name": "judges",
+          "type": {
+            "vec": "pubkey"
+          }
+        },
+        {
+          "name": "threshold",
+          "type": "u8"
+        },
+        {
+          "name": "deadline",
+          "type": "i64"
+        }
+      ]
+    },
+    {
+      "name": "mark_refundable",
+      "discriminator": [
+        185,
+        115,
+        187,
+        59,
+        193,
+        8,
+        197,
+        87
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "hackathon",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "settle_verdict",
+      "discriminator": [
+        89,
+        200,
+        163,
+        124,
+        96,
+        26,
+        94,
+        118
+      ],
+      "accounts": [
+        {
+          "name": "caller",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "hackathon",
+          "writable": true
+        },
+        {
+          "name": "verdict_authority",
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  101,
+                  114,
+                  100,
+                  105,
+                  99,
+                  116,
+                  95,
+                  97,
+                  117,
+                  116,
+                  104,
+                  111,
+                  114,
+                  105,
+                  116,
+                  121
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hackathon"
+              }
+            ]
+          }
+        },
+        {
+          "name": "prize_vault",
+          "writable": true
+        },
+        {
+          "name": "vault_ata",
+          "writable": true
+        },
+        {
+          "name": "winner_ata",
+          "writable": true
+        },
+        {
+          "name": "escrow_program",
+          "address": "BksBCTjhUJgZQsfqaBAFXHkLrpG537J9UCBzBguSWZHE"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "submit_ballot",
+      "discriminator": [
+        139,
+        9,
+        211,
+        17,
+        108,
+        214,
+        40,
+        241
+      ],
+      "accounts": [
+        {
+          "name": "judge",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "hackathon",
+          "writable": true
+        },
+        {
+          "name": "ballot",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  98,
+                  97,
+                  108,
+                  108,
+                  111,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "hackathon"
+              },
+              {
+                "kind": "account",
+                "path": "judge"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        }
+      ],
+      "args": [
+        {
+          "name": "winner_agent",
+          "type": "pubkey"
+        },
+        {
+          "name": "score_root",
+          "type": {
+            "array": [
+              "u8",
+              32
+            ]
+          }
+        },
+        {
+          "name": "reasoning_uri",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "HackathonAccount",
+      "discriminator": [
+        241,
+        117,
+        47,
+        213,
+        19,
+        95,
+        64,
+        92
+      ]
+    },
+    {
+      "name": "JudgeBallot",
+      "discriminator": [
+        233,
+        230,
+        243,
+        202,
+        70,
+        232,
+        181,
+        152
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "NotImplemented",
+      "msg": "Not implemented"
+    },
+    {
+      "code": 6001,
+      "name": "AlreadySettled",
+      "msg": "Already settled"
+    },
+    {
+      "code": 6002,
+      "name": "WrongStatus",
+      "msg": "Wrong status"
+    },
+    {
+      "code": 6003,
+      "name": "NotAJudge",
+      "msg": "Caller is not in the judges list"
+    },
+    {
+      "code": 6004,
+      "name": "ThresholdNotReached",
+      "msg": "Threshold not reached for any single winner"
+    },
+    {
+      "code": 6005,
+      "name": "ReasoningTooLong",
+      "msg": "Reasoning URI exceeds max length"
+    },
+    {
+      "code": 6006,
+      "name": "TooManyJudges",
+      "msg": "Too many judges (max 7)"
+    },
+    {
+      "code": 6007,
+      "name": "BadThreshold",
+      "msg": "Threshold must be > 0 and <= judges.len()"
+    },
+    {
+      "code": 6008,
+      "name": "BadDeadline",
+      "msg": "Deadline must be in the future"
+    },
+    {
+      "code": 6009,
+      "name": "GracePeriodActive",
+      "msg": "Deadline + grace period not yet reached"
+    }
+  ],
+  "types": [
+    {
+      "name": "HackathonAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "id",
+            "type": "u64"
+          },
+          {
+            "name": "sponsor",
+            "type": "pubkey"
+          },
+          {
+            "name": "prize_vault",
+            "type": "pubkey"
+          },
+          {
+            "name": "judges",
+            "type": {
+              "vec": "pubkey"
+            }
+          },
+          {
+            "name": "threshold",
+            "type": "u8"
+          },
+          {
+            "name": "deadline",
+            "type": "i64"
+          },
+          {
+            "name": "status",
+            "type": "u8"
+          },
+          {
+            "name": "verdict",
+            "type": {
+              "option": "pubkey"
+            }
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "JudgeBallot",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "hackathon",
+            "type": "pubkey"
+          },
+          {
+            "name": "judge",
+            "type": "pubkey"
+          },
+          {
+            "name": "winner_agent",
+            "type": "pubkey"
+          },
+          {
+            "name": "score_root",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "reasoning_uri",
+            "type": "string"
+          },
+          {
+            "name": "signed_at",
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    }
+  ]
+}
