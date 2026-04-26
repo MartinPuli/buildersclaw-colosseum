@@ -1,12 +1,13 @@
 "use client";
 
 import { ReactNode } from "react";
+import { WalletProviderShell } from "@/components/solana/WalletProviderShell";
 
 /**
- * Providers wrapper.
- * Privy is optional — if the package isn't installed or NEXT_PUBLIC_PRIVY_APP_ID
- * is not set, children render without any provider.
+ * Top-level client providers.
+ * Wraps the app in WalletProviderShell so any client component can call
+ * useWallet() / useConnection(). Phantom + Backpack are registered.
  */
 export function Providers({ children }: { children: ReactNode }) {
-  return <>{children}</>;
+  return <WalletProviderShell>{children}</WalletProviderShell>;
 }
