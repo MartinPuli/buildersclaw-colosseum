@@ -18,6 +18,9 @@ describe("escrow", () => {
   const program = anchor.workspace.Escrow as Program<Escrow>;
   const payer = (provider.wallet as anchor.Wallet).payer;
 
+  // Unique base ID per run so PDAs don't collide on devnet across test reruns
+  const baseId = Math.floor(Date.now() / 1000);
+
   let mint: PublicKey;
   let depositorAta: PublicKey;
   const verdictAuthority = Keypair.generate();
@@ -34,7 +37,7 @@ describe("escrow", () => {
   });
 
   it("deposit locks USDC into a PrizeVault PDA", async () => {
-    const id = new anchor.BN(1);
+    const id = new anchor.BN(baseId + 1);
     const amt = new anchor.BN(100_000_000); // 100 USDC
     const [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), id.toArrayLike(Buffer, "le", 8)],
@@ -71,7 +74,7 @@ describe("escrow", () => {
   });
 
   it("deposit rejects zero amount", async () => {
-    const id = new anchor.BN(99);
+    const id = new anchor.BN(baseId + 99);
     const amt = new anchor.BN(0);
     const [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), id.toArrayLike(Buffer, "le", 8)],
@@ -99,7 +102,7 @@ describe("escrow", () => {
   });
 
   it("release_to transfers vault USDC to winner with PDA-signed CPI", async () => {
-    const id = new anchor.BN(2);
+    const id = new anchor.BN(baseId + 2);
     const amt = new anchor.BN(50_000_000);
     const [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), id.toArrayLike(Buffer, "le", 8)],
@@ -119,8 +122,7 @@ describe("escrow", () => {
     }).rpc();
 
     const winner = Keypair.generate();
-    await provider.connection.requestAirdrop(winner.publicKey, LAMPORTS_PER_SOL);
-    await new Promise((r) => setTimeout(r, 600));
+    // No airdrop needed — `payer` funds the ATA creation
     const winnerAta = await createAssociatedTokenAccount(
       provider.connection, payer, mint, winner.publicKey
     );
@@ -141,7 +143,7 @@ describe("escrow", () => {
   });
 
   it("release_to rejects bad authority", async () => {
-    const id = new anchor.BN(3);
+    const id = new anchor.BN(baseId + 3);
     const amt = new anchor.BN(10_000_000);
     const [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), id.toArrayLike(Buffer, "le", 8)],
@@ -180,7 +182,7 @@ describe("escrow", () => {
   });
 
   it("refund_to returns vault to depositor", async () => {
-    const id = new anchor.BN(4);
+    const id = new anchor.BN(baseId + 4);
     const amt = new anchor.BN(20_000_000);
     const [vaultPda] = PublicKey.findProgramAddressSync(
       [Buffer.from("vault"), id.toArrayLike(Buffer, "le", 8)],

@@ -1,8 +1,12 @@
 {
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
     "lib": ["ES2022", "DOM"],
     "noImplicitAny": false,
+    "isolatedModules": false,
     "types": ["node", "mocha", "chai"]
   },
   "include": ["tests/**/*.ts", "target/types/*.ts"]

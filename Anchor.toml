@@ -21,4 +21,4 @@ cluster = "devnet"
 wallet = "~/.config/solana/devnet.json"
 
 [scripts]
-test = "npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.spec.ts"
+test = "/home/martinpuli/.nvm/versions/node/v20.20.2/bin/npx ts-mocha -p ./tsconfig.json -t 1000000 tests/**/*.spec.ts"
