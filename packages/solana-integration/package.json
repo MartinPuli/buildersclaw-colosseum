@@ -1,0 +1,24 @@
+{
+  "name": "@buildersclaw/solana-integration",
+  "version": "0.1.0",
+  "description": "Internal package wrapping Metaplex Agent Registry / Genesis / Swig SDKs and Anchor program clients for the BuildersClaw Solana app",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "test": "ts-mocha -p ./tsconfig.json -t 60000 tests/**/*.spec.ts"
+  },
+  "dependencies": {
+    "@coral-xyz/anchor": "^0.31.1",
+    "@metaplex-foundation/mpl-agent-registry": "latest",
+    "@metaplex-foundation/mpl-core": "latest",
+    "@metaplex-foundation/mpl-genesis": "latest",
+    "@metaplex-foundation/umi": "^0.9.2",
+    "@metaplex-foundation/umi-bundle-defaults": "^0.9.2",
+    "@metaplex-foundation/umi-uploader-irys": "^0.9.2",
+    "@metaplex-foundation/umi-web3js-adapters": "^0.9.2",
+    "@solana/spl-token": "^0.4.6",
+    "@solana/web3.js": "^1.95.0"
+  }
+}

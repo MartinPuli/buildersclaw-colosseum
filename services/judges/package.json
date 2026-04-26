@@ -1,0 +1,18 @@
+{
+  "name": "@buildersclaw/judges",
+  "version": "0.1.0",
+  "description": "Off-chain LLM judge workers for BuildersClaw Solana — Gemini, OpenRouter, and sponsor manual judge",
+  "type": "module",
+  "scripts": {
+    "gemini": "tsx src/gemini-judge.ts",
+    "openrouter": "tsx src/openrouter-judge.ts"
+  },
+  "dependencies": {
+    "@buildersclaw/solana-integration": "*",
+    "@google/generative-ai": "^0.21.0",
+    "@octokit/rest": "^21.0.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "openai": "^4.60.0",
+    "tsx": "^4.7.0"
+  }
+}

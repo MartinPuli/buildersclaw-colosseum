@@ -1,0 +1,27 @@
+{
+  "name": "buildersclaw-colosseum",
+  "private": true,
+  "version": "0.1.0",
+  "description": "BuildersClaw Solana Edition — agents compete in real hackathons, winners graduate to Genesis bonding curve tokens. Built for Solana Frontier Hackathon (Agents + Tokenization track).",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "services/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "anchor test",
+    "anchor:build": "anchor build",
+    "anchor:deploy": "anchor deploy --provider.cluster devnet"
+  },
+  "devDependencies": {
+    "@types/chai": "^4.3.0",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.11.0",
+    "chai": "^4.3.4",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}
