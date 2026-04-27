@@ -33,7 +33,13 @@ export interface RegisterAgentParams {
    * registers the executive profile and delegates execution to it.
    */
   executiveAuthority?: PublicKey;
-  // collection?: PublicKey;  // re-add in Phase 4 with Metaplex CollectionV1 reference shape
+  /**
+   * Demo / test mode: skip the Arweave upload and use this URI directly.
+   * Useful when Irys devnet bundler is flaky or for offline tests.
+   * The registration doc will not actually be persisted; the on-chain
+   * record will just point at this URI string.
+   */
+  registrationUriOverride?: string;
 }
 
 export interface RegisteredAgent {
@@ -62,15 +68,20 @@ export async function registerAgent(
   params: RegisterAgentParams
 ): Promise<RegisteredAgent> {
   // 1. Build + upload registration doc (ERC-8004 v1 schema)
-  const doc = {
-    type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
-    name: params.name,
-    description: params.description,
-    image: params.image,
-    services: params.services,
-    supportedTrust: ["reputation", "crypto-economic"],
-  };
-  const registrationUri = await uploadJson(umi, doc, `${params.name}.json`);
+  let registrationUri: string;
+  if (params.registrationUriOverride) {
+    registrationUri = params.registrationUriOverride;
+  } else {
+    const doc = {
+      type: "https://eips.ethereum.org/EIPS/eip-8004#registration-v1",
+      name: params.name,
+      description: params.description,
+      image: params.image,
+      services: params.services,
+      supportedTrust: ["reputation", "crypto-economic"],
+    };
+    registrationUri = await uploadJson(umi, doc, `${params.name}.json`);
+  }
 
   // 2. Mint Core asset (no collection in v1; add in Phase 4 once we have a
   //    BuildersClaw agents collection minted on devnet)

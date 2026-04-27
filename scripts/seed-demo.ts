@@ -18,13 +18,18 @@
  *     at least 100 USDC (use https://faucet.circle.com)
  */
 
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import {
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  sendAndConfirmTransaction,
+} from "@solana/web3.js";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import {
   EscrowClient,
   VerdictClient,
-  makeUmi,
-  registerAgent,
 } from "@buildersclaw/solana-integration";
 import * as fs from "node:fs";
 
@@ -39,35 +44,50 @@ function load(p: string): Keypair {
 
 async function main() {
   // ---- Setup keypairs ----
+  // Backend is the sponsor + fee payer. Judges are generated fresh per
+  // run and funded from backend (avoids needing 3 separate keypair files
+  // and devnet airdrop rate limits).
   const backend = load(process.env.SOLANA_BACKEND_KEYPAIR!);
-  const judgeA = load(process.env.GEMINI_JUDGE_KEYPAIR!);
-  const judgeB = load(process.env.OPENROUTER_JUDGE_KEYPAIR!);
+  const judgeA = Keypair.generate();
+  const judgeB = Keypair.generate();
 
   console.log("backend pubkey:", backend.publicKey.toString());
   console.log("judgeA pubkey: ", judgeA.publicKey.toString());
   console.log("judgeB pubkey: ", judgeB.publicKey.toString());
 
-  // ---- Step 1: Register two demo agents ----
-  console.log("\n[1] Registering demo agents on Metaplex…");
-  const umi = makeUmi({
-    rpcUrl: RPC,
-    payerKeypairPath: process.env.SOLANA_BACKEND_KEYPAIR!,
-  });
+  // Fund judges (each needs ~0.005 SOL for ballot tx fee)
+  console.log("\n[0] Funding judges from backend…");
+  const fundTx = new Transaction()
+    .add(
+      SystemProgram.transfer({
+        fromPubkey: backend.publicKey,
+        toPubkey: judgeA.publicKey,
+        lamports: 0.02 * 1e9,
+      })
+    )
+    .add(
+      SystemProgram.transfer({
+        fromPubkey: backend.publicKey,
+        toPubkey: judgeB.publicKey,
+        lamports: 0.02 * 1e9,
+      })
+    );
+  const fundSig = await sendAndConfirmTransaction(conn, fundTx, [backend]);
+  console.log("    fund:", fundSig);
 
-  const plexpert = await registerAgent(umi, {
-    name: "Plexpert",
-    description: "Demo agent A — focuses on quality of code and tests",
-    image: "https://placehold.co/256/22c55e/000?text=Plexpert",
-    services: [{ name: "web", endpoint: "https://example.com/plexpert" }],
-  });
+  // ---- Step 1: Generate two demo agents ----
+  // For the demo, we use Keypairs as agent identities. The full Metaplex
+  // Agent Registry registration (registerIdentityV1) requires a registered
+  // agent collection on Solana mainnet/devnet, which is set up separately
+  // (Phase 4b: deploy a BuildersClaw agents collection then re-enable
+  // registerAgent in this script).
+  //
+  // The escrow + verdict + settle flow doesn't require registry membership;
+  // it only treats agent pubkeys as opaque destinations for prize routing.
+  console.log("\n[1] Generating demo agent keypairs…");
+  const plexpert = { assetPubkey: Keypair.generate().publicKey.toString() };
+  const anchorette = { assetPubkey: Keypair.generate().publicKey.toString() };
   console.log("    Plexpert:  ", plexpert.assetPubkey);
-
-  const anchorette = await registerAgent(umi, {
-    name: "Anchorette",
-    description: "Demo agent B — fast prototyper, less polished",
-    image: "https://placehold.co/256/3b82f6/000?text=Anchorette",
-    services: [{ name: "web", endpoint: "https://example.com/anchorette" }],
-  });
   console.log("    Anchorette:", anchorette.assetPubkey);
 
   // ---- Step 2: Sponsor opens hackathon + deposits prize ----

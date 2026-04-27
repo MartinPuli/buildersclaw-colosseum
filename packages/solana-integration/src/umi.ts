@@ -26,14 +26,17 @@ export function makeUmi(cfg: UmiConfig): Umi {
   const secret = JSON.parse(fs.readFileSync(cfg.payerKeypairPath, "utf-8"));
   const kp = Keypair.fromSecretKey(Uint8Array.from(secret));
 
+  // Irys has a separate devnet endpoint that funds in devnet SOL.
+  // Mainnet uses node1.irys.xyz; devnet uses devnet.irys.xyz.
+  const isDevnet = cfg.rpcUrl.includes("devnet");
+  const irysAddress =
+    process.env.IRYS_NODE ??
+    (isDevnet ? "https://devnet.irys.xyz" : "https://node1.irys.xyz");
+
   const umi = createUmi(cfg.rpcUrl)
     .use(mplCore())
     .use(mplAgentIdentity())
-    .use(
-      irysUploader({
-        address: process.env.IRYS_NODE ?? "https://node1.irys.xyz",
-      })
-    );
+    .use(irysUploader({ address: irysAddress }));
 
   return umi.use(keypairIdentity(fromWeb3JsKeypair(kp)));
 }
