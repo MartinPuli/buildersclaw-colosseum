@@ -71,7 +71,7 @@ async function main() {
   console.log("    Anchorette:", anchorette.assetPubkey);
 
   // ---- Step 2: Sponsor opens hackathon + deposits prize ----
-  console.log("\n[2] Sponsor creates hackathon + deposits 100 USDC…");
+  console.log("\n[2] Sponsor creates hackathon + deposits 5 USDC…");
   const usdcMint = new PublicKey(
     process.env.USDC_MINT_DEVNET ??
       "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU"
@@ -90,9 +90,11 @@ async function main() {
   const [verdictAuthority] = verdict.verdictAuthorityPda(hackPda);
   const [vaultPda] = escrow.vaultPda(id);
 
+  // 5 USDC — small enough that 20 USDC funded ATA can run 4 demos
+  const PRIZE_USDC_BASE = 5_000_000n;
   const depositTx = await escrow.deposit({
     hackathonId: id,
-    amount: 100_000_000n, // 100 USDC
+    amount: PRIZE_USDC_BASE,
     mint: usdcMint,
     depositorAta: sponsorAta.address,
     verdictAuthority,

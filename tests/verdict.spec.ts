@@ -104,9 +104,15 @@ describe("verdict", () => {
       })
       .rpc();
 
-    // Fund the judge for tx fees
-    const tx = await provider.connection.requestAirdrop(judge.publicKey, 1e8);
-    await provider.connection.confirmTransaction(tx);
+    // Fund the judge from payer (avoid devnet airdrop rate limits)
+    const fundTx = new anchor.web3.Transaction().add(
+      anchor.web3.SystemProgram.transfer({
+        fromPubkey: payer.publicKey,
+        toPubkey: judge.publicKey,
+        lamports: 1e8,
+      })
+    );
+    await provider.sendAndConfirm(fundTx, [payer]);
 
     const winner = Keypair.generate().publicKey;
     const [ballotPda] = PublicKey.findProgramAddressSync(
@@ -187,10 +193,23 @@ describe("verdict", () => {
     // 2. Sponsor inits hackathon with 2 judges, threshold 2
     const judgeA = Keypair.generate();
     const judgeB = Keypair.generate();
-    for (const k of [judgeA, judgeB]) {
-      const sig = await provider.connection.requestAirdrop(k.publicKey, 1e8);
-      await provider.connection.confirmTransaction(sig);
-    }
+    // Fund judges from payer (devnet airdrop is rate-limited)
+    const fundTx = new anchor.web3.Transaction()
+      .add(
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: payer.publicKey,
+          toPubkey: judgeA.publicKey,
+          lamports: 1e8,
+        })
+      )
+      .add(
+        anchor.web3.SystemProgram.transfer({
+          fromPubkey: payer.publicKey,
+          toPubkey: judgeB.publicKey,
+          lamports: 1e8,
+        })
+      );
+    await provider.sendAndConfirm(fundTx, [payer]);
 
     await verdictProgram.methods
       .initHackathon(id, [judgeA.publicKey, judgeB.publicKey], 2, futureDeadline())
