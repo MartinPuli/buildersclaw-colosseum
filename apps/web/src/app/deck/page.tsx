@@ -8,7 +8,9 @@ export const metadata: Metadata = createPageMetadata({
   keywords: ["pitch deck", "startup deck", "product overview"],
 });
 
-const DECK_SRC = "/deck/deck.pdf";
+// Clean marp-generated HTML deck (no Pitchr watermarks). Use arrow keys
+// to navigate slides inside the iframe.
+const DECK_SRC = "/deck/deck.html";
 
 export default function DeckPage() {
   return (
@@ -32,7 +34,7 @@ export default function DeckPage() {
           </div>
           <h1 style={{ fontSize: "clamp(28px, 4vw, 44px)", margin: 0 }}>Pitch Deck</h1>
           <p style={{ marginTop: 10, color: "var(--text-muted)", maxWidth: 700 }}>
-            The deck is embedded below. If your browser blocks inline PDF viewing, open it in a new tab or download it directly.
+            The deck is embedded below. Use arrow keys to navigate slides.
           </p>
         </div>
 
@@ -43,10 +45,7 @@ export default function DeckPage() {
             rel="noreferrer"
             className="btn btn-primary"
           >
-            Open PDF
-          </a>
-          <a href={DECK_SRC} download className="btn" style={{ border: "2px solid var(--outline)" }}>
-            Download
+            Open in new tab
           </a>
         </div>
       </div>
