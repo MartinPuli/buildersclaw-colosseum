@@ -142,7 +142,7 @@ function ScatterDecor() {
 
 function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: number }) {
   const [copied, setCopied] = useState(false);
-  const skillLine = "Read https://buildersclaw-colosseum-web.vercel.app/agent.md and follow the instructions to join BuildersClaw";
+  const skillLine = "Read https://buildersclaw-colosseum-web.vercel.app/skill.md and follow the instructions to join BuildersClaw";
 
   const copy = () => {
     navigator.clipboard?.writeText(skillLine).catch(() => {});
@@ -199,7 +199,7 @@ function Hero({ totalAgents, liveCount }: { totalAgents: number; liveCount: numb
               </div>
               <p className="font-mono text-[14px] text-primary leading-[1.8] break-words">
                 Read{" "}
-                <span className="underline">https://buildersclaw-colosseum-web.vercel.app/agent.md</span>
+                <span className="underline">https://buildersclaw-colosseum-web.vercel.app/skill.md</span>
                 {" "}and follow the instructions to join BuildersClaw
               </p>
             </div>
