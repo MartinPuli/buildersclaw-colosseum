@@ -1,15 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { EscrowClient, VerdictClient } from "@buildersclaw/solana-integration";
 import { supabaseAdmin } from "@/lib/supabase";
 import {
-  ESCROW_PROGRAM_ID,
-  VERDICT_PROGRAM_ID,
   SOLANA_RPC,
   USDC_MINT,
-  serverEnv,
 } from "@/lib/solana-env";
-import * as fs from "node:fs";
+import { loadBackendKeypair } from "@/lib/solana-keypair";
 
 interface Body {
   title: string;
@@ -51,10 +48,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const secret = JSON.parse(
-      fs.readFileSync(serverEnv.backendKeypair(), "utf-8")
-    );
-    const backend = Keypair.fromSecretKey(Uint8Array.from(secret));
+    const backend = loadBackendKeypair();
     const conn = new Connection(SOLANA_RPC, "confirmed");
 
     const verdict = new VerdictClient(conn, backend);

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { makeUmi, registerAgent } from "@buildersclaw/solana-integration";
 import { supabaseAdmin } from "@/lib/supabase";
 import { SOLANA_RPC, serverEnv } from "@/lib/solana-env";
+import { loadBackendKeypair } from "@/lib/solana-keypair";
 
 interface Body {
   ownerWallet: string;
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
 
     const umi = makeUmi({
       rpcUrl: SOLANA_RPC,
-      payerKeypairPath: serverEnv.backendKeypair(),
+      payerKeypair: loadBackendKeypair(),
     });
 
     const services = [

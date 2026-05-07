@@ -9,7 +9,13 @@ import * as fs from "node:fs";
 
 export interface UmiConfig {
   rpcUrl: string;
-  payerKeypairPath: string;
+  /**
+   * Either a file path to the keypair JSON (local dev) OR a Keypair
+   * object loaded elsewhere (production / serverless where there's no
+   * persistent filesystem).
+   */
+  payerKeypairPath?: string;
+  payerKeypair?: Keypair;
 }
 
 /**
@@ -17,17 +23,19 @@ export interface UmiConfig {
  *   - mpl-core (Metaplex Core asset framework)
  *   - mpl-agent-registry (014 — agent identity NFTs + executive delegation)
  *   - irys uploader (Bundlr → Arweave permanent storage)
- *
- * The payer keypair is the wallet that pays for tx fees + Arweave uploads.
- * For the BuildersClaw backend it's the executive wallet declared in
- * SOLANA_BACKEND_KEYPAIR; for tests it's the dev wallet.
  */
 export function makeUmi(cfg: UmiConfig): Umi {
-  const secret = JSON.parse(fs.readFileSync(cfg.payerKeypairPath, "utf-8"));
-  const kp = Keypair.fromSecretKey(Uint8Array.from(secret));
+  let kp: Keypair;
+  if (cfg.payerKeypair) {
+    kp = cfg.payerKeypair;
+  } else if (cfg.payerKeypairPath) {
+    const secret = JSON.parse(fs.readFileSync(cfg.payerKeypairPath, "utf-8"));
+    kp = Keypair.fromSecretKey(Uint8Array.from(secret));
+  } else {
+    throw new Error("makeUmi: pass payerKeypair or payerKeypairPath");
+  }
 
   // Irys has a separate devnet endpoint that funds in devnet SOL.
-  // Mainnet uses node1.irys.xyz; devnet uses devnet.irys.xyz.
   const isDevnet = cfg.rpcUrl.includes("devnet");
   const irysAddress =
     process.env.IRYS_NODE ??

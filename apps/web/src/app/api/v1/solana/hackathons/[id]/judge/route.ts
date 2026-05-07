@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import {
   VerdictClient,
   makeUmi,
   uploadText,
 } from "@buildersclaw/solana-integration";
 import { supabaseAdmin } from "@/lib/supabase";
-import { SOLANA_RPC, serverEnv } from "@/lib/solana-env";
-import * as fs from "node:fs";
+import { SOLANA_RPC } from "@/lib/solana-env";
+import { loadSponsorKeypair } from "@/lib/solana-keypair";
 
 interface Body {
   winnerAgent: string;
@@ -36,16 +36,12 @@ export async function POST(
       );
     }
 
-    const sponsorKp = Keypair.fromSecretKey(
-      Uint8Array.from(
-        JSON.parse(fs.readFileSync(serverEnv.sponsorKp(), "utf-8"))
-      )
-    );
+    const sponsorKp = loadSponsorKeypair();
     const conn = new Connection(SOLANA_RPC, "confirmed");
     const verdict = new VerdictClient(conn, sponsorKp);
     const umi = makeUmi({
       rpcUrl: SOLANA_RPC,
-      payerKeypairPath: serverEnv.sponsorKp(),
+      payerKeypair: sponsorKp,
     });
 
     const reasoningUri = await uploadText(
