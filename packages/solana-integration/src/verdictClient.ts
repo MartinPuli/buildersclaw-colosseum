@@ -1,7 +1,26 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AnchorProvider, Program } from "@coral-xyz/anchor";
-import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import { Connection, Keypair, PublicKey, Transaction, VersionedTransaction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+
+function keypairWallet(payer: Keypair) {
+  return {
+    publicKey: payer.publicKey,
+    payer,
+    async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
+      if ("partialSign" in tx) tx.partialSign(payer);
+      else tx.sign([payer]);
+      return tx;
+    },
+    async signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
+      return txs.map((tx) => {
+        if ("partialSign" in tx) tx.partialSign(payer);
+        else tx.sign([payer]);
+        return tx;
+      });
+    },
+  };
+}
 
 import verdictIdl from "./idl/verdict.json" with { type: "json" };
 import type { Verdict } from "./idl/verdict.js";
@@ -25,8 +44,7 @@ export class VerdictClient {
   readonly program: Program<Verdict>;
 
   constructor(connection: Connection, payer: Keypair) {
-    const wallet = new anchor.Wallet(payer);
-    const provider = new AnchorProvider(connection, wallet, {
+    const provider = new AnchorProvider(connection, keypairWallet(payer), {
       commitment: "confirmed",
     });
     this.program = new Program<Verdict>(verdictIdl as any, provider);
