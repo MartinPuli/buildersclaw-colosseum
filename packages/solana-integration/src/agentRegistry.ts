@@ -40,6 +40,13 @@ export interface RegisterAgentParams {
    * record will just point at this URI string.
    */
   registrationUriOverride?: string;
+  /**
+   * Skip the on-chain registerIdentityV1 + delegateExecutionV1 calls. Only
+   * mints the Core asset (agent NFT) and returns the asset pubkey as the
+   * canonical agent identity. Use this until a BuildersClaw agents
+   * collection is minted on devnet (Phase 4b).
+   */
+  skipIdentity?: boolean;
 }
 
 export interface RegisteredAgent {
@@ -92,19 +99,27 @@ export async function registerAgent(
     uri: registrationUri,
   }).sendAndConfirm(umi);
 
-  // 3. Register identity (binds asset → registration_uri on-chain)
-  await registerIdentityV1(umi, {
-    asset: asset.publicKey,
-    agentRegistrationUri: registrationUri,
-  }).sendAndConfirm(umi);
+  // 3. Register identity (binds asset → registration_uri on-chain).
+  //    Skipped in demo/Vercel mode until we mint a BuildersClaw agents
+  //    collection on devnet — the agent-registry program rejects assets
+  //    that are not part of a registered collection.
+  let identityPda: PublicKey;
+  if (params.skipIdentity) {
+    identityPda = asset.publicKey;
+  } else {
+    await registerIdentityV1(umi, {
+      asset: asset.publicKey,
+      agentRegistrationUri: registrationUri,
+    }).sendAndConfirm(umi);
 
-  const [identityPda] = findAgentIdentityV1Pda(umi, {
-    asset: asset.publicKey,
-  });
+    [identityPda] = findAgentIdentityV1Pda(umi, {
+      asset: asset.publicKey,
+    });
+  }
 
   // 4. Optional executive delegation
   let executiveDelegated = false;
-  if (params.executiveAuthority) {
+  if (!params.skipIdentity && params.executiveAuthority) {
     const [executivePda] = findExecutiveProfileV1Pda(umi, {
       authority: publicKey(params.executiveAuthority),
     });

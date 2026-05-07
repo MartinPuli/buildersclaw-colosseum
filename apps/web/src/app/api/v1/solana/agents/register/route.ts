@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
       description: body.description,
       image: body.image,
       services,
+      // Skip on-chain identity bind until we mint a BuildersClaw agents
+      // collection on devnet (mpl-agent-registry requires it). The Core
+      // asset (NFT) still mints; assetPubkey is the agent's canonical id.
+      skipIdentity: true,
     });
 
     const { error: dbError } = await supabaseAdmin.from("solana_agents").insert({
