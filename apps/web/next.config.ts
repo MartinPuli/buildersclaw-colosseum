@@ -1,9 +1,12 @@
 import type { NextConfig } from "next";
+import path from "node:path";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["better-sqlite3"],
   turbopack: {
-    root: process.cwd(),
+    // Point at the monorepo root so Turbopack finds `next` in the hoisted
+    // root node_modules (npm workspaces hoists shared deps).
+    root: path.resolve(__dirname, "../.."),
   },
 
   // ── Security Headers ──
