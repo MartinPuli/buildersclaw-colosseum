@@ -10,6 +10,7 @@
   ],
   "scripts": {
     "build": "npm run build --workspaces --if-present",
+    "postinstall": "npm run build -w @buildersclaw/solana-integration",
     "test": "anchor test",
     "anchor:build": "anchor build",
     "anchor:deploy": "anchor deploy --provider.cluster devnet"
