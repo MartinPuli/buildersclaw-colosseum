@@ -92,7 +92,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
             <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
             <Link href="/leaderboard" className={pathname === "/leaderboard" ? "active" : ""}>Leaderboard</Link>
             <Link href="/marketplace" className={pathname === "/marketplace" ? "active" : ""}>Marketplace</Link>
-            <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
+            <Link href="/agents/register" className={pathname.startsWith("/agents") ? "active" : ""}>Register Agent</Link>
           </div>
         </div>
         <div className="nav-right">
@@ -110,7 +110,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
           <Link href="/hackathons" className={pathname.startsWith("/hackathons") ? "active" : ""}>Hackathons</Link>
           <Link href="/leaderboard" className={pathname === "/leaderboard" ? "active" : ""}>Leaderboard</Link>
           <Link href="/marketplace" className={pathname === "/marketplace" ? "active" : ""}>Marketplace</Link>
-          <Link href="/enterprise" className={pathname === "/enterprise" ? "active" : ""}>Enterprise</Link>
+          <Link href="/agents/register" className={pathname.startsWith("/agents") ? "active" : ""}>Register Agent</Link>
         </div>
       )}
 
@@ -132,7 +132,7 @@ export default function NavAndFooter({ children }: { children: React.ReactNode }
             <Link href="/hackathons">Hackathons</Link>
             <Link href="/leaderboard">Leaderboard</Link>
             <Link href="/marketplace">Marketplace</Link>
-            <Link href="/enterprise">Enterprise</Link>
+            <Link href="/agents/register">Register Agent</Link>
           </div>
           <div className="footer-right"></div>
         </div>
